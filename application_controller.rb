@@ -15,12 +15,12 @@ class ApplicationController < Sinatra::Base
   # Get pitch deck metadata
   get '/pitch/:pitchid' do
     if !params[:token] || params[:token]&.empty?
-      content = {
+      payload = {
         'errors' => [
           'Request requires a token.'
         ]
       }.to_json
-      return [401, {'Content-Type': 'application/json'}, content]
+      return [401, {'Content-Type': 'application/json'}, payload]
     end
 
     token_status = WooWooFund::TokenValidation.validate(params[:token])
@@ -36,9 +36,10 @@ class ApplicationController < Sinatra::Base
         {
           'id' => 100,
           'name' => 'Fund Me A Go Go',
+          'about' => 'Lorem ipsum dolor',
           'goal_value' => 150000,
           'current_value' => 5000,
-          'slides' => [
+          'pitch_deck' => [
             'http://localhost:9292/user/1/100/slide1.png',
             'http://localhost:9292/user/1/100/slide2.png',
             'http://localhost:9292/user/1/100/slide3.png'
