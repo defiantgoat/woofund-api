@@ -56,7 +56,7 @@ class ApplicationController < Sinatra::Base
     end
 
     # For POC we will assume that the token is for the correct user and has the correct claims.
-    user = token_status[:payload]['user']['id'].to_s
+    user = token_status[:payload]['user']['email']
     database = File.read('./database.json')
     data_hash = JSON.parse(database)
     user_data = data_hash[user]
@@ -70,17 +70,86 @@ class ApplicationController < Sinatra::Base
 
   # Create a new pitch deck for user and return metadata
   post '/pitch/new' do
-    puts request.params['pitch_deck']
-    in_file = File.open(request.params['pitch_deck'][:tempfile], 'rb')
-    im = Magick::Image.read(in_file)
-    im.each do |img, i|
-      img.write("./public/slide#{i}.jpg")
-      # puts img.format
-      # imgF = File.open("./public/users/slide#{i}.jpg", 'w+')
-      # # imgFile = File.new("slide#{i}.jpg", 'w+')
-      # img.write(imgF)
+    bearer_token = request.env['HTTP_AUTHORIZATION']&.split(' ')
+    unless bearer_token
+      payload = {
+        'errors' => [
+          'Request requires a token.'
+        ]
+      }.to_json
+      return [401, {'Content-Type': 'application/json'}, payload]
     end
-    puts im
+
+    token_status = WooWooFund::TokenValidation.validate(bearer_token[1])
+
+    if token_status[:status_code] < 1
+      return [401, {'Content-Type': 'application/json'}, token_status.to_json]
+    end
+
+
+    campaign_name = request.params['name']
+    snippet = request.params['snippet']
+    about = request.params['about']
+    goal_value = request.params['goal_value']
+    pitch_deck = request.params['pitch_deck']
+
+    user = token_status[:payload]['user']['email']
+    database = File.read('./database.json')
+    data_hash = JSON.parse(database)
+    user_data = data_hash[user]
+
+    campaign_id = user_data.count + 1
+
+    new_record = {
+      'id' => campaign_id,
+      'name' => campaign_name,
+      'snippet' => snippet,
+      'about' => about,
+      'goal_value' => goal_value,
+      'current_value' => 0,
+      'thumbnail': 'http://localhost:9292/api/static/placeholder.png',
+    }
+
+    pitch_deck_arr = []
+
+    FileUtils.mkdir_p "./public/users/#{user}/#{campaign_id}"
+
+    in_file = File.open(pitch_deck[:tempfile], 'rb')
+    im = Magick::Image.read(in_file)
+    im.each_with_index { |img, i, |
+      puts "   Geometry: #{img.columns}x#{img.rows}"
+      puts "   Resolution: #{img.x_resolution.to_i}x#{img.y_resolution.to_i} "+
+             "pixels/#{img.units == Magick::PixelsPerInchResolution ?
+                         "inch" : "centimeter"}"
+      if img.properties.length > 0
+        puts "   Properties:"
+        img.properties { |name,value|
+          puts %Q|      #{name} = "#{value}"|
+        }
+      end
+      img.format=('JPG')
+      img.resize!(2)
+      # img.compression=(Magick::NoCompression)
+      # puts img.geometry
+      path = "./public/users/#{user}/#{campaign_id}/slide#{i}.jpg"
+      img.write("./public/users/#{user}/#{campaign_id}/slide#{i}.jpg") {
+        self.quality = 100
+      }
+      pitch_deck_arr.push({
+                            'width' => img.columns * 2,
+                            'height' => img.rows * 2,
+                            'url' => "http://localhost:9292/api/users/#{user}/#{campaign_id}/slide#{i}.jpg"
+                          })
+    }
+
+    new_record['pitch_deck'] = pitch_deck_arr
+
+    user_data.push(new_record)
+    data_hash[user] = user_data
+
+
+    File.write('./database.json', JSON.dump(data_hash))
+
     # requires Authorization header with Bearer token
     # pdf, ppt, psd, ai
     #
@@ -93,7 +162,7 @@ class ApplicationController < Sinatra::Base
     #     user_data = data_hash['1']
     #     File.write('./sample-data.json', JSON.dump(data_hash))
     #
-    [200, {'Content-Type': 'application/json'}, {'jayson' => 'yes'}.to_json]
+    [200, {'Content-Type': 'application/json'}, new_record.to_json]
   end
 
   # Update an existing pitch deck and return metadata
