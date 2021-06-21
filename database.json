@@ -1,0 +1,28 @@
+{
+  "1": [{
+    "id": 1,
+    "name": "Fund Me A Go Go",
+    "snippet": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum rutrum ex faucibus mollis aliquam.",
+    "about": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum rutrum ex faucibus mollis aliquam. Suspendisse potenti. Nulla non maximus est. Nam porta, erat vel interdum tristique, eros augue aliquet lorem, ornare ullamcorper libero nisl sed tortor. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae; Vivamus mollis ex ut feugiat ultrices. Maecenas non leo at eros vestibulum vulputate et sed lectus. Integer elementum elit auctor efficitur eleifend. Pellentesque tincidunt tempor magna, a maximus ligula luctus in. Vestibulum vehicula placerat dapibus. Donec quis quam id urna fringilla porttitor eu rutrum velit. Suspendisse id ornare nisl. Aliquam erat volutpat. Duis justo tortor, viverra sit amet accumsan non, facilisis ac tortor. Sed et eleifend ante.",
+    "goal_value": 150000,
+    "current_value": 5000,
+    "thumbnail": "http://localhost:9292/api/static/placeholder.png",
+    "pitch_deck": [
+      {
+        "width": 800,
+        "height": 600,
+        "url": "http://localhost:9292/api/users/1/100/slide1.png"
+      },
+      {
+        "width": 800,
+        "height": 600,
+        "url": "http://localhost:9292/api/users/1/100/slide1.png"
+      },
+      {
+        "width": 800,
+        "height": 600,
+        "url": "http://localhost:9292/api/users/1/100/slide1.png"
+      }
+    ]
+  }]
+}

@@ -114,7 +114,7 @@ module WooWooFund
         rescue JWT::ExpiredSignature
           status_response[:status_text] = TOKEN_STATUS_TEXT::EXPIRED
 
-      rescue JWT::VerificationError
+        rescue JWT::VerificationError
           status_response[:status_text] = TOKEN_STATUS_TEXT::VERIFICATION_ERROR
 
         rescue JWT::ImmatureSignature

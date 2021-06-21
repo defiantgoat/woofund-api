@@ -1,7 +1,33 @@
 require 'sinatra/base'
+require 'rack/cors'
 require_relative 'lib/woowoo_token_validation'
+require 'rmagick'
 
 class ApplicationController < Sinatra::Base
+
+  # Default CORS headers plus Access-Control for pre-flight requests.
+  headers = [
+    'Cache-Control',
+    'Content-Language',
+    'Content-Type',
+    'Expires',
+    'Last-Modified',
+    'Pragma',
+    'Options',
+    'Access-Control-Allow-Origin',
+    'Access-Control-Allow-Headers',
+    'Access-Control-Allow-Methods',
+    'Authorization'
+  ].freeze
+
+  use Rack::Cors do
+    allow do
+      origins 'localhost:8080'
+      resource '*',
+               :headers => headers,
+               :methods => [:get, :post, :patch, :options]
+    end
+  end
 
   def initialize(app = nil)
     super
@@ -30,35 +56,44 @@ class ApplicationController < Sinatra::Base
     end
 
     # For POC we will assume that the token is for the correct user and has the correct claims.
+    user = token_status[:payload]['user']['id'].to_s
+    database = File.read('./database.json')
+    data_hash = JSON.parse(database)
+    user_data = data_hash[user]
 
     payload = {
-      'data' => [
-        {
-          'id' => 100,
-          'name' => 'Fund Me A Go Go',
-          'about' => 'Lorem ipsum dolor',
-          'goal_value' => 150000,
-          'current_value' => 5000,
-          'pitch_deck' => [
-            'http://localhost:9292/user/1/100/slide1.png',
-            'http://localhost:9292/user/1/100/slide2.png',
-            'http://localhost:9292/user/1/100/slide3.png'
-          ]
-        }
-      ]
+      'data' => user_data
     }.to_json
 
     [200, {'Content-Type': 'application/json'}, payload]
   end
 
   # Create a new pitch deck for user and return metadata
-  post '/pitch/:userid' do
-    puts params[:userid]
+  post '/pitch/new' do
+    puts request.params['pitch_deck']
+    in_file = File.open(request.params['pitch_deck'][:tempfile], 'rb')
+    im = Magick::Image.read(in_file)
+    im.each do |img, i|
+      img.write("./public/slide#{i}.jpg")
+      # puts img.format
+      # imgF = File.open("./public/users/slide#{i}.jpg", 'w+')
+      # # imgFile = File.new("slide#{i}.jpg", 'w+')
+      # img.write(imgF)
+    end
+    puts im
     # requires Authorization header with Bearer token
     # pdf, ppt, psd, ai
     #
     # For POC we will assume that the token is for the correct user and has the correct claims.
     #
+    #     database = File.read('./database.json')
+    #
+    #     data_hash = JSON.parse(database)
+    #
+    #     user_data = data_hash['1']
+    #     File.write('./sample-data.json', JSON.dump(data_hash))
+    #
+    [200, {'Content-Type': 'application/json'}, {'jayson' => 'yes'}.to_json]
   end
 
   # Update an existing pitch deck and return metadata

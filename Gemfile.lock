@@ -8,6 +8,8 @@ GEM
     mustermann (1.1.1)
       ruby2_keywords (~> 0.0.1)
     rack (2.2.3)
+    rack-cors (1.1.1)
+      rack (>= 2.0.0)
     rack-protection (2.1.0)
       rack
     rake (12.3.3)
@@ -31,6 +33,7 @@ DEPENDENCIES
   jwt
   minitest (~> 5.0)
   rack
+  rack-cors (~> 1.0, >= 1.0.3)
   rake (~> 12.0)
   rmagick
   sinatra
