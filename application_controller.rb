@@ -40,19 +40,21 @@ class ApplicationController < Sinatra::Base
 
   # Get pitch deck metadata
   get '/pitch/:pitchid' do
+    payload = {
+      :errors => [],
+      :data => nil
+    }
+
     if !params[:token] || params[:token]&.empty?
-      payload = {
-        'errors' => [
-          'Request requires a token.'
-        ]
-      }.to_json
-      return [401, {'Content-Type': 'application/json'}, payload]
+      payload[:errors].push('Request requires a token.')
+      return [401, {'Content-Type': 'application/json'}, payload.to_json]
     end
 
     token_status = WooWooFund::TokenValidation.validate(params[:token])
 
     if token_status[:status_code] < 1
-      return [401, {'Content-Type': 'application/json'}, token_status.to_json]
+      payload[:errors].push(token_status)
+      return [401, {'Content-Type': 'application/json'}, payload.to_json]
     end
 
     # For POC we will assume that the token is for the correct user and has the correct claims.
@@ -61,31 +63,32 @@ class ApplicationController < Sinatra::Base
     data_hash = JSON.parse(database)
     user_data = data_hash[user]
 
-    payload = {
-      'data' => user_data
-    }.to_json
+    payload[:data] = user_data
+    puts(payload)
 
-    [200, {'Content-Type': 'application/json'}, payload]
+    [200, {'Content-Type': 'application/json'}, payload.to_json]
   end
 
   # Create a new pitch deck for user and return metadata
   post '/pitch/new' do
+    payload = {
+      :errors => [],
+      :data => []
+    }
+
     bearer_token = request.env['HTTP_AUTHORIZATION']&.split(' ')
+
     unless bearer_token
-      payload = {
-        'errors' => [
-          'Request requires a token.'
-        ]
-      }.to_json
-      return [401, {'Content-Type': 'application/json'}, payload]
+      payload[:errors].push('Request requires a token.')
+      return [401, {'Content-Type': 'application/json'}, payload.to_json]
     end
 
     token_status = WooWooFund::TokenValidation.validate(bearer_token[1])
 
     if token_status[:status_code] < 1
-      return [401, {'Content-Type': 'application/json'}, token_status.to_json]
+      payload[:errors].push(token_status)
+      return [401, {'Content-Type': 'application/json'}, payload.to_json]
     end
-
 
     campaign_name = request.params['name']
     snippet = request.params['snippet']
@@ -112,57 +115,44 @@ class ApplicationController < Sinatra::Base
 
     pitch_deck_arr = []
 
-    FileUtils.mkdir_p "./public/users/#{user}/#{campaign_id}"
+    begin
+      FileUtils.mkdir_p "./public/users/#{user}/#{campaign_id}"
 
-    in_file = File.open(pitch_deck[:tempfile], 'rb')
-    im = Magick::Image.read(in_file)
-    im.each_with_index { |img, i, |
-      puts "   Geometry: #{img.columns}x#{img.rows}"
-      puts "   Resolution: #{img.x_resolution.to_i}x#{img.y_resolution.to_i} "+
-             "pixels/#{img.units == Magick::PixelsPerInchResolution ?
-                         "inch" : "centimeter"}"
-      if img.properties.length > 0
-        puts "   Properties:"
-        img.properties { |name,value|
-          puts %Q|      #{name} = "#{value}"|
+      in_file = File.open(pitch_deck[:tempfile], 'rb')
+      im = Magick::Image.read(in_file)
+      im.each_with_index { |img, i, |
+        puts "Geometry: #{img.columns}x#{img.rows}"
+        puts "Resolution: #{img.x_resolution.to_i}x#{img.y_resolution.to_i} " +
+               "pixels/#{img.units == Magick::PixelsPerInchResolution ?
+                           "inch" : "centimeter"}"
+        if img.properties.length > 0
+          puts "   Properties:"
+          img.properties { |name,value|
+            puts %Q|      #{name} = "#{value}"|
+          }
+        end
+        img.format=('JPG')
+        img.resize!(2)
+        img.write("./public/users/#{user}/#{campaign_id}/slide#{i}.jpg") {
+          self.quality = 100
         }
-      end
-      img.format=('JPG')
-      img.resize!(2)
-      # img.compression=(Magick::NoCompression)
-      # puts img.geometry
-      path = "./public/users/#{user}/#{campaign_id}/slide#{i}.jpg"
-      img.write("./public/users/#{user}/#{campaign_id}/slide#{i}.jpg") {
-        self.quality = 100
+        pitch_deck_arr.push({
+                              'width' => img.columns * 2,
+                              'height' => img.rows * 2,
+                              'url' => "http://localhost:9292/api/users/#{user}/#{campaign_id}/slide#{i}.jpg"
+                            })
       }
-      pitch_deck_arr.push({
-                            'width' => img.columns * 2,
-                            'height' => img.rows * 2,
-                            'url' => "http://localhost:9292/api/users/#{user}/#{campaign_id}/slide#{i}.jpg"
-                          })
-    }
 
-    new_record['pitch_deck'] = pitch_deck_arr
+      new_record['pitch_deck'] = pitch_deck_arr
+      payload[:data].push(new_record)
+      user_data.push(new_record)
+      data_hash[user] = user_data
+      File.write('./database.json', JSON.dump(data_hash))
+    rescue => e
+      payload[:errors].push(e.to_s)
+    end
 
-    user_data.push(new_record)
-    data_hash[user] = user_data
-
-
-    File.write('./database.json', JSON.dump(data_hash))
-
-    # requires Authorization header with Bearer token
-    # pdf, ppt, psd, ai
-    #
-    # For POC we will assume that the token is for the correct user and has the correct claims.
-    #
-    #     database = File.read('./database.json')
-    #
-    #     data_hash = JSON.parse(database)
-    #
-    #     user_data = data_hash['1']
-    #     File.write('./sample-data.json', JSON.dump(data_hash))
-    #
-    [200, {'Content-Type': 'application/json'}, new_record.to_json]
+    [200, {'Content-Type': 'application/json'}, payload.to_json]
   end
 
   # Update an existing pitch deck and return metadata
