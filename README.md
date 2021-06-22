@@ -17,7 +17,7 @@ The application was developed on a Mac running BigSur with the following environ
 
 ## Known Issues and Limitations
 * API uses JWT for authentication.
-  * As a proof of concept, a self signed certificate was used to create a long lived token (6 months) that is embeddd in the [client](https://github.com/defiantgoat/woowoofund-app).
-  * The API embeds the public keys from the certificate in order to validate the long lived token.
+  * As a proof of concept, a self signed certificate was used to create a long lived token (6 months) that is [embeded](https://github.com/defiantgoat/woowoofund-app/blob/main/src/client/reducers/index.ts#L14) in the [client](https://github.com/defiantgoat/woowoofund-app).
+  * The API [embeds the public keys from the certificate](https://github.com/defiantgoat/woowoofund-api/blob/main/lib/jwt_token_validation_helper.rb#L74) in order to validate the long lived token.
 * As a POC, no database was created, instead a flat JSON file is used to store and retreive data for the [client](https://github.com/defiantgoat/woowoofund-app).
 
