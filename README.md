@@ -10,6 +10,7 @@ The application was developed on a Mac running BigSur with the following environ
 
 ## Important Setup for Ubuntu 20.04
 The api was run on an Ubuntu 20.04 virtual machine via VM Fusion.
+* Your Ubuntu Machine needs ruby and nodejs installed.
 * The API uses ImageMagick to convert PDF files to images. A functionality that has been disabled in Ubuntu and requires editing the ImageMagick policy.xml file.
 Run the following (if you need to on your machine of VM) A VM is recommended.
 * `sudo apt update`
