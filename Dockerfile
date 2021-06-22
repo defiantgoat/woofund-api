@@ -6,8 +6,6 @@ FROM ruby:2.7.3
 RUN bundle config --global frozen 1
 
 WORKDIR /usr/src/app
-RUN mkdir -p user
-RUN chmod 755 user
 
 RUN gem update --system && gem install bundler && bundle --version
 
