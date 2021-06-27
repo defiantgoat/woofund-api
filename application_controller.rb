@@ -121,16 +121,6 @@ class ApplicationController < Sinatra::Base
       in_file = File.open(pitch_deck[:tempfile], 'rb')
       im = Magick::Image.read(in_file)
       im.each_with_index { |img, i, |
-        puts "Geometry: #{img.columns}x#{img.rows}"
-        puts "Resolution: #{img.x_resolution.to_i}x#{img.y_resolution.to_i} " +
-               "pixels/#{img.units == Magick::PixelsPerInchResolution ?
-                           "inch" : "centimeter"}"
-        if img.properties.length > 0
-          puts "   Properties:"
-          img.properties { |name,value|
-            puts %Q|      #{name} = "#{value}"|
-          }
-        end
         img.format=('JPG')
         img.resize!(2)
         img.write("./public/users/#{user}/#{campaign_id}/slide#{i}.jpg") {
